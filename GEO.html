@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Connections Journey</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #e6f2ff;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    .screen {
+      display: none;
+      padding: 20px;
+      transition: opacity 0.5s ease-in-out;
+    }
+    .active {
+      display: block;
+      opacity: 1;
+    }
+    h1 {
+      font-size: 2em;
+      color: #004d99;
+      margin-top: 20px;
+    }
+    .btn {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background-color: #007acc;
+      color: white;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background-color: #005c99;
+    }
+    .question-block {
+      margin: 20px auto;
+      padding: 15px;
+      background-color: #ffffff;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .question-block h3 {
+      margin-bottom: 10px;
+    }
+    .option {
+      display: block;
+      margin: 8px 0;
+      padding: 10px;
+      background-color: #f2f2f2;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .option.selected {
+      background-color: #cce5ff;
+    }
+    #quizResults {
+      font-size: 1.2em;
+      margin-top: 20px;
+      color: #006600;
+    }
+    .match-container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .match-item {
+      width: 160px;
+      padding: 10px;
+      border-radius: 10px;
+      background-color: #ffd966;
+      font-weight: bold;
+      cursor: grab;
+      text-align: center;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    }
+    .match-item:active {
+      cursor: grabbing;
+    }
+    .drop-zone {
+      width: 180px;
+      min-height: 50px;
+      border-radius: 10px;
+      background-color: #cce5ff;
+      border: 2px dashed #007acc;
+      padding: 10px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-align: center;
+      transition: background-color 0.3s ease;
+    }
+    .hint-box {
+      max-width: 300px;
+      background-color: #fff2cc;
+      padding: 15px;
+      border-radius: 10px;
+      margin: 0 auto 20px auto;
+      text-align: left;
+      font-size: 0.95em;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* --- Styles for Connections Match Cards --- */
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 20px;
+    }
+    .cards-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .card {
+      width: 120px;
+      height: 80px;
+      perspective: 1000px;
+      cursor: grab;
+    }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+    }
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+      backface-visibility: hidden;
+    }
+    .card-front {
+      background-color: #ffd966;
+      font-size: 2em;
+    }
+    .card-back {
+      background-color: #ffffff;
+      transform: rotateY(180deg);
+      color: #000;
+      font-size: 1em;
+    }
+    .categories-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+    .category {
+      width: 200px;
+      min-height: 150px;
+      background-color: #cce5ff;
+      border-radius: 12px;
+      padding: 10px;
+      font-weight: bold;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+    }
+    .category h3 {
+      margin-top: 0;
+      color: #004d99;
+    }
+    .pile {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      min-height: 120px;
+      align-items: center;
+      border: 2px dashed #004d99;
+      padding: 5px;
+      background-color: #e6f2ff;
+    }
+    .card.dragging {
+      opacity: 0.5;
+    }
+    #gameResult {
+      font-size: 1.3em;
+      margin-top: 20px;
+      color: #006600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Intro Screen -->
+  <div id="intro" class="screen active">
+    <h1>🌏 Welcome to Connections Journey</h1>
+    <p>Learn how people connect to places, family, and culture.</p>
+    <button class="btn" onclick="startQuiz()">Start Journey</button>
+  </div>
+
+  <!-- Quiz Screen -->
+  <div id="quiz" class="screen">
+    <h1>🧭 Answer the Questions</h1>
+    <!-- Questions -->
+    <div class="question-block" data-answer="A">
+      <h3>1. Why is Uluru special to the Anangu people?</h3>
+      <div class="option" data-option="A" onclick="selectOption(this)">It has important stories and ceremonies</div>
+      <div class="option" data-option="B" onclick="selectOption(this)">It's a famous place for tourists</div>
+    </div>
+    <div class="question-block" data-answer="B">
+      <h3>2. How do Torres Strait Islander people use the sea?</h3>
+      <div class="option" data-option="A" onclick="selectOption(this)">Just for fun</div>
+      <div class="option" data-option="B" onclick="selectOption(this)">For food, travel, and culture</div>
+    </div>
+    <div class="question-block" data-answer="C">
+      <h3>3. What connects people to where they were born?</h3>
+      <div class="option" data-option="A" onclick="selectOption(this)">Weather and scenery</div>
+      <div class="option" data-option="B" onclick="selectOption(this)">Tourist attractions</div>
+      <div class="option" data-option="C" onclick="selectOption(this)">Family and culture</div>
+    </div>
+    <div class="question-block" data-answer="B">
+      <h3>4. Why are rivers important to Aboriginal communities?</h3>
+      <div class="option" data-option="A" onclick="selectOption(this)">Only for fishing</div>
+      <div class="option" data-option="B" onclick="selectOption(this)">They give life, stories, and ceremonies</div>
+    </div>
+    <div class="question-block" data-answer="A">
+      <h3>5. What does “Country” mean for Aboriginal and Torres Strait Islander people?</h3>
+      <div class="option" data-option="A" onclick="selectOption(this)">A living place that gives life and connects people</div>
+      <div class="option" data-option="B" onclick="selectOption(this)">A place for farming and building</div>
+    </div>
+
+    <button class="btn" onclick="checkQuizAnswers()">Check Answers</button>
+    <div id="quizResults"></div>
+    <button id="nextToMatchBtn" class="btn" style="display:none;" onclick="startMatchGame()">Next Game</button>
+  </div>
+
+  <!-- Match-Up Game Screen -->
+  <div id="matchGame" class="screen">
+    <h1>🔗 Match the Connections</h1>
+    <p>Drag each place to the correct type of connection.</p>
+    <div class="hint-box" id="hintsContainer"></div>
+    <div class="match-container" id="draggablesContainer">
+      <div class="match-item" draggable="true" ondragstart="drag(event)" id="uluru">Uluru</div>
+      <div class="match-item" draggable="true" ondragstart="drag(event)" id="reef">Torres Strait</div>
+      <div class="match-item" draggable="true" ondragstart="drag(event)" id="river">Murray River</div>
+      <div class="match-item" draggable="true" ondragstart="drag(event)" id="birthplace">Birthplace</div>
+    </div>
+    <div class="match-container" id="dropZonesContainer"></div>
+    <button class="btn" onclick="checkMatchAnswers()">Check Answers</button>
+    <div id="matchResults"></div>
+    <button id="nextPageBtn" class="btn" style="display:none;" onclick="startCardsGame()">Next Game</button>
+  </div>
+
+  <!-- Connections Match Cards Game Screen -->
+  <div id="cardsGame" class="screen">
+    <h1>🔗 Connections Match Cards</h1>
+    <p>Flip a card and drag it into the correct category: Local, Travel, or Celebrations!</p>
+    <div class="game-container">
+      <div class="cards-container" id="cardsContainer"></div>
+      <div class="categories-container" id="categoriesContainer"></div>
+      <button class="btn" onclick="checkGame()">Check Answers</button>
+      <div id="gameResult"></div>
+    </div>
+  </div>
+
+  <script>
+    // --- Navigation ---
+    function startQuiz() {
+      document.getElementById('intro').classList.remove('active');
+      document.getElementById('quiz').classList.add('active');
+    }
+    function startMatchGame() {
+      document.getElementById('quiz').classList.remove('active');
+      document.getElementById('matchGame').classList.add('active');
+      shuffleHints();
+      shuffleDropZones();
+    }
+    function startCardsGame() {
+      document.getElementById('matchGame').classList.remove('active');
+      document.getElementById('cardsGame').classList.add('active');
+      initGame();
+    }
+
+    // --- Quiz Logic ---
+    function selectOption(option) {
+      const siblings = option.parentElement.querySelectorAll('.option');
+      siblings.forEach(sib => sib.classList.remove('selected'));
+      option.classList.add('selected');
+    }
+    function checkQuizAnswers() {
+      const blocks = document.querySelectorAll('#quiz .question-block');
+      let score = 0;
+      blocks.forEach(block => {
+        const selected = block.querySelector('.option.selected');
+        if (selected && selected.dataset.option === block.dataset.answer) score++;
+      });
+      const total = blocks.length;
+      document.getElementById('quizResults').textContent = `✅ You got ${score} out of ${total} correct!`;
+      document.getElementById('nextToMatchBtn').style.display = 'inline-block';
+    }
+
+    // --- Match Game Logic ---
+    function allowDrop(ev) { ev.preventDefault(); }
+    function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+    function drop(ev) {
+      ev.preventDefault();
+      const data = ev.dataTransfer.getData("text");
+      const dragged = document.getElementById(data);
+      if (!ev.target.classList.contains('drop-zone')) return;
+      if (dragged.id === ev.target.dataset.match) {
+        ev.target.appendChild(dragged);
+        ev.target.style.backgroundColor = "#b3ffb3";
+      } else {
+        ev.target.style.backgroundColor = "#ffcccc";
+        setTimeout(() => ev.target.style.backgroundColor = "#cce5ff", 500);
+      }
+    }
+    function checkMatchAnswers() {
+      const dropZones = document.querySelectorAll('.drop-zone');
+      let score = 0;
+      dropZones.forEach(zone => {
+        const draggedItem = zone.querySelector('.match-item');
+        if (draggedItem && draggedItem.id === zone.dataset.match) score++;
+      });
+      const total = dropZones.length;
+      document.getElementById('matchResults').textContent = `✅ You got ${score} out of ${total} correct!`;
+      if(score === total){ document.getElementById('nextPageBtn').style.display = 'inline-block'; }
+    }
+    function shuffleHints() {
+      const hints = [
+        "Uluru is very special for stories and ceremonies.",
+        "Torres Strait Islanders use the sea for food and travel.",
+        "The Murray River is important for ceremonies and community life.",
+        "People feel connected to where they were born because of family and culture."
+      ];
+      for (let i = hints.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [hints[i], hints[j]] = [hints[j], hints[i]];
+      }
+      const container = document.getElementById('hintsContainer');
+      container.innerHTML = "<strong>Hints:</strong><ul>" + hints.map(h => `<li>${h}</li>`).join('') + "</ul>";
+    }
+    function shuffleDropZones() {
+      const zonesInfo = [
+        {id: "uluru", label: "Spiritual Connection"},
+        {id: "reef", label: "Sea Connection"},
+        {id: "river", label: "Ceremony Connection"},
+        {id: "birthplace", label: "Family Connection"}
+      ];
+      for (let i = zonesInfo.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [zonesInfo[i], zonesInfo[j]] = [zonesInfo[j], zonesInfo[i]];
+      }
+      const container = document.getElementById('dropZonesContainer');
+      container.innerHTML = '';
+      zonesInfo.forEach(zone => {
+        const div = document.createElement('div');
+        div.className = 'drop-zone';
+        div.setAttribute('ondrop', 'drop(event)');
+        div.setAttribute('ondragover', 'allowDrop(event)');
+        div.dataset.match = zone.id;
+        div.textContent = zone.label;
+        container.appendChild(div);
+      });
+    }
+
+    // --- Cards Game Logic (Unchanged) ---
+    const cardsData = [
+      {text: "School", category: "Local"},
+      {text: "Playground", category: "Local"},
+      {text: "Home", category: "Local"},
+      {text: "Uluru", category: "Travel"},
+      {text: "Great Barrier Reef", category: "Travel"},
+      {text: "Torres Strait", category: "Travel"},
+      {text: "Birthday party", category: "Celebrations"},
+      {text: "NAIDOC Week", category: "Celebrations"},
+      {text: "Christmas", category: "Celebrations"}
+    ];
+    const categoryNames = ["Local", "Travel", "Celebrations"];
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+    function initGame() {
+      document.getElementById('gameResult').textContent = '';
+      const shuffledCards = shuffleArray([...cardsData]);
+      const cardsContainer = document.getElementById('cardsContainer');
+      cardsContainer.innerHTML = '';
+      shuffledCards.forEach(card => {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'card';
+        cardDiv.draggable = true;
+        cardDiv.dataset.category = card.category;
+        cardDiv.dataset.text = card.text;
+        cardDiv.innerHTML = `<div class="card-inner">
+          <div class="card-front">❓</div>
+          <div class="card-back">${card.text}</div>
+        </div>`;
+        cardDiv.onclick = () => { cardDiv.classList.toggle('flipped'); };
+        cardDiv.ondragstart = dragCard;
+        cardDiv.ondragend = dragEndCard;
+        cardsContainer.appendChild(cardDiv);
+      });
+      const categoriesContainer = document.getElementById('categoriesContainer');
+      categoriesContainer.innerHTML = '';
+      categoryNames.forEach(name => {
+        const div = document.createElement('div');
+        div.className = 'category';
+        div.dataset.category = name;
+        const pile = document.createElement('div');
+        pile.className = 'pile';
+        pile.ondragover = allowDropCard;
+        pile.ondrop = dropCard;
+        div.innerHTML = `<h3>${name}</h3>`;
+        div.appendChild(pile);
+        categoriesContainer.appendChild(div);
+      });
+    }
+    function dragCard(ev) {
+      ev.dataTransfer.setData("text", ev.target.dataset.text);
+      ev.target.classList.add('dragging');
+    }
+    function dragEndCard(ev) { ev.target.classList.remove('dragging'); }
+    function allowDropCard(ev) { ev.preventDefault(); }
+    function dropCard(ev) {
+      ev.preventDefault();
+      const text = ev.dataTransfer.getData("text");
+      const card = [...document.querySelectorAll('.card')].find(c => c.dataset.text === text);
+      if (card && ev.currentTarget.classList.contains('pile')) {
+        ev.currentTarget.appendChild(card);
+        card.draggable = false;
+        card.onclick = null;
+      }
+    }
+    function checkGame() {
+      const categories = document.querySelectorAll('.category');
+      let score = 0;
+      categories.forEach(cat => {
+        const pile = cat.querySelector('.pile');
+        const cards = pile.querySelectorAll('.card');
+        cards.forEach(c => {
+          if (c.dataset.category === cat.dataset.category) score++;
+        });
+      });
+      const total = cardsData.length;
+      document.getElementById('gameResult').textContent = `🎉 You got ${score} out of ${total} correct! 🎉`;
+    }
+  </script>
+</body>
+</html>
